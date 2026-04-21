@@ -1,0 +1,1627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Organism Explorer</title>
+  <style>
+    :root {
+      --bg: #f6f1e8;
+      --panel: rgba(255, 251, 244, 0.86);
+      --panel-strong: #fffaf2;
+      --ink: #1e2a2f;
+      --muted: #5d6c70;
+      --line: rgba(30, 42, 47, 0.12);
+      --teal: #0f766e;
+      --leaf: #6b8f3d;
+      --gold: #f0b85a;
+      --coral: #da6c4d;
+      --sky: #87bcd8;
+      --shadow: 0 18px 45px rgba(25, 46, 53, 0.12);
+      --radius-xl: 26px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --max: 1200px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Trebuchet MS", "Gill Sans", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(240, 184, 90, 0.35), transparent 28%),
+        radial-gradient(circle at 85% 10%, rgba(135, 188, 216, 0.45), transparent 25%),
+        linear-gradient(180deg, #f8f3ea 0%, #eef4e7 54%, #f7f0e5 100%);
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: auto;
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      filter: blur(40px);
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::before {
+      top: 90px;
+      left: -100px;
+      background: rgba(107, 143, 61, 0.28);
+    }
+
+    body::after {
+      right: -80px;
+      bottom: 80px;
+      background: rgba(218, 108, 77, 0.2);
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    img {
+      max-width: 100%;
+      display: block;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      width: min(100% - 28px, var(--max));
+      margin: 0 auto;
+      padding-bottom: 38px;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 14px;
+      z-index: 20;
+      margin-top: 18px;
+      padding: 14px 18px;
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      border-radius: 999px;
+      background: rgba(255, 250, 242, 0.78);
+      backdrop-filter: blur(16px);
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-badge {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--teal), #4c9f94 58%, #b8dcb1 100%);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-size: 1.35rem;
+      font-weight: 700;
+      box-shadow: 0 12px 22px rgba(15, 118, 110, 0.28);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-family: "Cambria", "Georgia", serif;
+      font-size: 1.3rem;
+      line-height: 1.1;
+    }
+
+    .brand p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .nav-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .nav-link {
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--ink);
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: 0.25s ease;
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+      background: var(--ink);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    .hero {
+      margin-top: 26px;
+      padding: 38px;
+      border-radius: 34px;
+      background:
+        linear-gradient(135deg, rgba(15, 118, 110, 0.9), rgba(107, 143, 61, 0.82)),
+        linear-gradient(160deg, rgba(255, 255, 255, 0.16), transparent 55%);
+      color: #fff;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 1.2fr 0.95fr;
+      gap: 24px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -70px -65px auto;
+      width: 280px;
+      height: 280px;
+      border: 2px dashed rgba(255, 255, 255, 0.22);
+      border-radius: 50%;
+    }
+
+    .hero h2 {
+      margin: 0 0 14px;
+      font-family: "Cambria", "Georgia", serif;
+      font-size: clamp(2rem, 4vw, 3.6rem);
+      line-height: 0.98;
+      max-width: 9ch;
+    }
+
+    .hero p {
+      margin: 0 0 20px;
+      max-width: 58ch;
+      color: rgba(255, 255, 255, 0.88);
+      font-size: 1.02rem;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .button,
+    .ghost-button,
+    .chip-button {
+      border: 0;
+      cursor: pointer;
+      transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+    }
+
+    .button {
+      padding: 13px 20px;
+      border-radius: 999px;
+      background: #fff;
+      color: var(--ink);
+      font-weight: 700;
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.14);
+    }
+
+    .button:hover,
+    .ghost-button:hover,
+    .chip-button:hover {
+      transform: translateY(-2px);
+    }
+
+    .ghost-button {
+      padding: 13px 20px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.14);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .hero-side {
+      display: grid;
+      gap: 14px;
+      align-content: center;
+    }
+
+    .hero-stat,
+    .panel,
+    .feature-card,
+    .result-card,
+    .builder-card,
+    .tip-card,
+    .search-result,
+    .timeline-step {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-stat {
+      padding: 20px;
+      color: var(--ink);
+      background: rgba(255, 250, 244, 0.9);
+      animation: rise 0.8s ease both;
+    }
+
+    .hero-stat strong {
+      display: block;
+      font-size: 1.75rem;
+      margin-bottom: 6px;
+      font-family: "Cambria", "Georgia", serif;
+    }
+
+    .page {
+      display: none;
+      animation: fadeIn 0.4s ease;
+      padding-top: 28px;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+
+    .section-head h3 {
+      margin: 0;
+      font-family: "Cambria", "Georgia", serif;
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+    }
+
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 70ch;
+    }
+
+    .panel {
+      padding: 24px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 18px;
+    }
+
+    .grid-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .grid-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .feature-card,
+    .result-card,
+    .builder-card,
+    .tip-card,
+    .timeline-step,
+    .search-result {
+      padding: 22px;
+    }
+
+    .feature-card h4,
+    .result-card h4,
+    .builder-card h4,
+    .tip-card h4,
+    .timeline-step h4,
+    .search-result h4 {
+      margin: 0 0 10px;
+      font-size: 1.15rem;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(15, 118, 110, 0.12);
+      color: var(--teal);
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      margin-bottom: 14px;
+    }
+
+    .feature-card p,
+    .result-card p,
+    .builder-card p,
+    .tip-card p,
+    .timeline-step p,
+    .search-result p,
+    .panel p,
+    .panel li {
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .pill-list,
+    .chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .pill,
+    .chip {
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.92rem;
+    }
+
+    .pill {
+      background: rgba(218, 108, 77, 0.13);
+      color: #934128;
+    }
+
+    .chip {
+      background: rgba(15, 118, 110, 0.12);
+      color: var(--teal);
+      border: 0;
+    }
+
+    .chip-button {
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(15, 118, 110, 0.1);
+      color: var(--teal);
+    }
+
+    .chip-button.active {
+      background: var(--teal);
+      color: #fff;
+    }
+
+    .search-box {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .field,
+    .textarea,
+    .select {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.85);
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .field:focus,
+    .textarea:focus,
+    .select:focus {
+      border-color: rgba(15, 118, 110, 0.45);
+      box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.12);
+    }
+
+    .search-results {
+      margin-top: 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .search-result {
+      display: none;
+    }
+
+    .search-result.visible {
+      display: block;
+    }
+
+    .search-result small,
+    .meta-line {
+      display: block;
+      margin-top: 8px;
+      color: var(--teal);
+      font-weight: 700;
+    }
+
+    .columns {
+      display: grid;
+      grid-template-columns: 1.04fr 0.96fr;
+      gap: 18px;
+    }
+
+    .upload-zone {
+      border: 2px dashed rgba(15, 118, 110, 0.35);
+      border-radius: var(--radius-xl);
+      padding: 22px;
+      background: linear-gradient(180deg, rgba(15, 118, 110, 0.05), rgba(135, 188, 216, 0.08));
+      text-align: center;
+    }
+
+    .upload-zone input {
+      margin-top: 12px;
+    }
+
+    .preview-box {
+      margin-top: 16px;
+      min-height: 240px;
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(233, 244, 241, 0.9)),
+        linear-gradient(180deg, rgba(15, 118, 110, 0.05), transparent);
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      color: var(--muted);
+    }
+
+    .preview-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .form-grid .full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      display: grid;
+      gap: 7px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .result-banner {
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(15, 118, 110, 0.12), rgba(107, 143, 61, 0.16));
+      border: 1px solid rgba(15, 118, 110, 0.14);
+    }
+
+    .result-banner strong {
+      display: block;
+      font-size: 1.2rem;
+      margin-bottom: 8px;
+      color: var(--ink);
+    }
+
+    .result-banner ul {
+      margin: 10px 0 0;
+      padding-left: 18px;
+    }
+
+    .catalog-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .catalog-card {
+      padding: 20px;
+      border-radius: 22px;
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      transition: transform 0.25s ease;
+    }
+
+    .catalog-card:hover {
+      transform: translateY(-4px);
+    }
+
+    .catalog-card h4 {
+      margin: 0 0 10px;
+      font-size: 1.18rem;
+    }
+
+    .catalog-card span {
+      display: inline-block;
+      margin-bottom: 12px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      background: rgba(240, 184, 90, 0.18);
+      color: #8a6117;
+      font-size: 0.86rem;
+      font-weight: 700;
+    }
+
+    .steps {
+      display: grid;
+      gap: 14px;
+    }
+
+    .step {
+      padding: 18px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid var(--line);
+    }
+
+    .step strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--teal);
+    }
+
+    .practice-box {
+      padding: 24px;
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(239, 246, 239, 0.94));
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .practice-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .decision-log {
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(15, 118, 110, 0.07);
+      min-height: 88px;
+      color: var(--muted);
+    }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .builder-row {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr 1fr auto;
+      gap: 10px;
+      align-items: start;
+      margin-bottom: 12px;
+    }
+
+    .mini-button {
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 0;
+      background: rgba(218, 108, 77, 0.12);
+      color: #a34d33;
+      cursor: pointer;
+    }
+
+    .key-output {
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid var(--line);
+      min-height: 120px;
+      white-space: pre-wrap;
+      line-height: 1.75;
+    }
+
+    .footnote {
+      padding: 22px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 980px) {
+      .hero,
+      .columns,
+      .timeline,
+      .grid-3,
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        border-radius: 28px;
+        align-items: start;
+      }
+
+      .nav-links {
+        justify-content: flex-start;
+      }
+
+      .builder-row,
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero h2 {
+        max-width: none;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .shell {
+        width: min(100% - 18px, var(--max));
+      }
+
+      .topbar,
+      .hero,
+      .panel,
+      .feature-card,
+      .result-card,
+      .builder-card,
+      .tip-card,
+      .timeline-step,
+      .search-result,
+      .catalog-card,
+      .practice-box {
+        border-radius: 22px;
+      }
+
+      .topbar {
+        padding: 16px;
+      }
+
+      .hero {
+        padding: 24px;
+      }
+
+      .search-box {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-badge">OE</div>
+        <div>
+          <h1>Organism Explorer</h1>
+          <p>Single-file science project website for classifying animals</p>
+        </div>
+      </div>
+      <nav class="nav-links" aria-label="Main navigation">
+        <button class="nav-link active" data-page="home">Home</button>
+        <button class="nav-link" data-page="classify">Classify</button>
+        <button class="nav-link" data-page="categories">Categories</button>
+        <button class="nav-link" data-page="keys">Dichotomous Keys</button>
+        <button class="nav-link" data-page="builder">Create a Key</button>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div>
+        <div class="eyebrow">Science Project Website</div>
+        <h2>Identify animals with clear steps and visual tools.</h2>
+        <p>
+          This website helps students upload or take a photo, compare animal features,
+          learn the main groups of organisms, search for facts, and practice using
+          dichotomous keys in an easy classroom-friendly interface.
+        </p>
+        <div class="hero-actions">
+          <button class="button" data-jump="classify">Start Classifying</button>
+          <button class="ghost-button" data-jump="builder">Build Your Own Key</button>
+        </div>
+      </div>
+      <div class="hero-side">
+        <article class="hero-stat">
+          <strong>5 vertebrate groups</strong>
+          Mammals, reptiles, birds, fish, and amphibians are organized with examples.
+        </article>
+        <article class="hero-stat">
+          <strong>Image upload + camera</strong>
+          Students can take a photo on mobile or upload one from their device.
+        </article>
+        <article class="hero-stat">
+          <strong>Search + key practice</strong>
+          Look up animals, get fun facts, and train with a yes/no identification path.
+        </article>
+      </div>
+    </section>
+
+    <main>
+      <section class="page active" id="page-home">
+        <div class="section-head">
+          <div>
+            <h3>Home Page</h3>
+            <p>
+              Learn what the website includes, how it helps with organism identification,
+              and how dichotomous keys and technology make classification easier for students.
+            </p>
+          </div>
+        </div>
+
+        <div class="grid grid-3">
+          <article class="feature-card">
+            <div class="eyebrow">What This Website Does</div>
+            <h4>Helpful, visual, and easy to use</h4>
+            <p>
+              Organism Explorer gives students one place to upload animal photos, compare
+              features, search facts, study categories, and create their own identification keys.
+            </p>
+            <div class="pill-list">
+              <span class="pill">Photo preview</span>
+              <span class="pill">Classification helper</span>
+              <span class="pill">Searchable examples</span>
+            </div>
+          </article>
+
+          <article class="feature-card">
+            <div class="eyebrow">How To Use Dichotomous Keys</div>
+            <h4>Follow one yes/no choice at a time</h4>
+            <p>
+              A dichotomous key works by asking two opposite questions at every step.
+              Students observe features such as feathers, fur, gills, moist skin, or jointed legs,
+              then follow the matching branch until the organism is identified.
+            </p>
+            <div class="pill-list">
+              <span class="pill">Observe carefully</span>
+              <span class="pill">Answer yes or no</span>
+              <span class="pill">Move to the next clue</span>
+            </div>
+          </article>
+
+          <article class="feature-card">
+            <div class="eyebrow">How Technology Helps Us Identify Organisms</div>
+            <h4>Technology makes observation faster</h4>
+            <p>
+              Cameras, zoom, online records, digital galleries, and interactive keys help students
+              compare body features, save evidence, and classify animals more accurately.
+            </p>
+            <div class="pill-list">
+              <span class="pill">Phone cameras</span>
+              <span class="pill">Image comparison</span>
+              <span class="pill">Interactive databases</span>
+            </div>
+          </article>
+        </div>
+
+        <div class="panel" style="margin-top: 18px;">
+          <div class="section-head">
+            <div>
+              <h3>Search Animals</h3>
+              <p>
+                Search for a specific animal to get category details, fun facts, and a tip for
+                using dichotomous keys. This search bar is on the home page as requested.
+              </p>
+            </div>
+          </div>
+          <div class="search-box">
+            <input
+              id="animalSearch"
+              class="field"
+              type="search"
+              placeholder="Search for dog, eagle, frog, crab, salmon..."
+              aria-label="Search animals"
+            >
+            <button id="searchReset" class="button" type="button">Show All</button>
+          </div>
+          <div class="search-results" id="searchResults"></div>
+        </div>
+      </section>
+
+      <section class="page" id="page-classify">
+        <div class="section-head">
+          <div>
+            <h3>Image Classifier</h3>
+            <p>
+              Upload or take a photo of an animal, then answer feature questions. The website helps
+              classify the organism into the correct main group.
+            </p>
+          </div>
+        </div>
+
+        <div class="columns">
+          <div class="panel">
+            <div class="upload-zone">
+              <h4>Take a picture or upload one</h4>
+              <p>On phones, the camera can open directly. On computers, choose an image file.</p>
+              <input id="animalImage" type="file" accept="image/*" capture="environment">
+            </div>
+            <div class="preview-box" id="previewBox">
+              <span>No animal image selected yet.</span>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="eyebrow">Classification Questions</div>
+            <p>
+              Use visible features to identify the organism. This mirrors the way a dichotomous key
+              works in science class.
+            </p>
+            <div class="form-grid">
+              <label>
+                Backbone?
+                <select id="hasBackbone" class="select">
+                  <option value="">Choose</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              </label>
+              <label>
+                Body covering
+                <select id="bodyCovering" class="select">
+                  <option value="">Choose</option>
+                  <option value="fur">Fur or hair</option>
+                  <option value="feathers">Feathers</option>
+                  <option value="scales">Dry scales</option>
+                  <option value="moist">Moist skin</option>
+                  <option value="shell">Exoskeleton or hard outer body</option>
+                  <option value="smooth">Smooth / other</option>
+                </select>
+              </label>
+              <label>
+                Main habitat
+                <select id="habitat" class="select">
+                  <option value="">Choose</option>
+                  <option value="land">Mostly land</option>
+                  <option value="water">Mostly water</option>
+                  <option value="both">Land and water</option>
+                  <option value="air">Often seen in the air</option>
+                </select>
+              </label>
+              <label>
+                Movement or special structure
+                <select id="movement" class="select">
+                  <option value="">Choose</option>
+                  <option value="wings">Wings</option>
+                  <option value="fins">Fins</option>
+                  <option value="jointed">Jointed legs</option>
+                  <option value="legs">Legs</option>
+                  <option value="slither">Slithers</option>
+                </select>
+              </label>
+              <label>
+                Reproduction
+                <select id="reproduction" class="select">
+                  <option value="">Choose</option>
+                  <option value="live">Usually gives birth to live young</option>
+                  <option value="eggs">Usually lays eggs</option>
+                </select>
+              </label>
+              <label>
+                Breathing style
+                <select id="breathing" class="select">
+                  <option value="">Choose</option>
+                  <option value="gills">Gills</option>
+                  <option value="lungs">Lungs</option>
+                  <option value="mixed">Changes between life stages / mixed</option>
+                </select>
+              </label>
+            </div>
+            <div class="hero-actions" style="margin-top: 18px;">
+              <button id="classifyButton" class="button" type="button">Classify Animal</button>
+              <button id="resetClassifier" class="chip-button" type="button">Reset</button>
+            </div>
+            <div class="result-banner" id="classificationResult">
+              <strong>Waiting for classification</strong>
+              Add an image and answer the questions above to see the most likely animal group.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-categories">
+        <div class="section-head">
+          <div>
+            <h3>Animal Categories</h3>
+            <p>
+              These categories help students compare similar organisms and understand how animals are
+              grouped by major features.
+            </p>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-bottom: 18px;">
+          <div class="eyebrow">Category Ideas</div>
+          <h4>Animals can be grouped in similar but different categories</h4>
+          <p>
+            Students can sort animals by backbone, skin covering, reproduction, habitat, and movement.
+            They can also compare air-based, land-based, and water-based animals across different groups.
+          </p>
+          <div class="chip-list">
+            <span class="chip">Air-based animals</span>
+            <span class="chip">Land-based animals</span>
+            <span class="chip">Water-based animals</span>
+            <span class="chip">Land and water animals</span>
+            <span class="chip">Backbone / no backbone</span>
+          </div>
+        </div>
+
+        <div class="catalog-grid">
+          <article class="catalog-card">
+            <span>Vertebrate</span>
+            <h4>Mammals</h4>
+            <p>Have fur or hair and usually give birth to live young. Examples: dogs, humans, cats, dolphins.</p>
+          </article>
+          <article class="catalog-card">
+            <span>Vertebrate</span>
+            <h4>Reptiles</h4>
+            <p>Have dry, scaly skin and usually lay eggs. Examples: snakes, lizards, turtles.</p>
+          </article>
+          <article class="catalog-card">
+            <span>Vertebrate</span>
+            <h4>Birds</h4>
+            <p>Have feathers, wings, and lay eggs. Examples: eagles, sparrows, owls.</p>
+          </article>
+          <article class="catalog-card">
+            <span>Vertebrate</span>
+            <h4>Fish</h4>
+            <p>Live in water and breathe with gills. Examples: salmon, goldfish, tuna.</p>
+          </article>
+          <article class="catalog-card">
+            <span>Vertebrate</span>
+            <h4>Amphibians</h4>
+            <p>Often live on land and in water and have moist skin. Examples: frogs, toads, salamanders.</p>
+          </article>
+          <article class="catalog-card">
+            <span>Invertebrate</span>
+            <h4>Arthropods</h4>
+            <p>Have jointed legs and an exoskeleton. Examples: insects, spiders, crabs.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="page" id="page-keys">
+        <div class="section-head">
+          <div>
+            <h3>Dichotomous Keys</h3>
+            <p>
+              Learn the method, then practice with an interactive yes/no key to identify an organism.
+            </p>
+          </div>
+        </div>
+
+        <div class="grid grid-2">
+          <div class="panel">
+            <div class="eyebrow">How To Use It</div>
+            <div class="steps">
+              <div class="step">
+                <strong>Step 1</strong>
+                Observe visible traits such as feathers, fur, skin type, legs, fins, or wings.
+              </div>
+              <div class="step">
+                <strong>Step 2</strong>
+                Read one pair of opposite choices, then choose the option that matches the animal.
+              </div>
+              <div class="step">
+                <strong>Step 3</strong>
+                Follow the next clue until the key reaches a final identification.
+              </div>
+              <div class="step">
+                <strong>Step 4</strong>
+                Compare the result with real examples to check that it makes sense.
+              </div>
+            </div>
+          </div>
+
+          <div class="practice-box">
+            <div class="eyebrow">Interactive Practice</div>
+            <h4 id="practiceQuestion">Press start to begin the sample key.</h4>
+            <p id="practiceHint">This example key separates vertebrates and invertebrates, then narrows the group.</p>
+            <div class="practice-actions">
+              <button id="practiceStart" class="button" type="button">Start Key</button>
+              <button id="practiceYes" class="chip-button" type="button" disabled>Yes</button>
+              <button id="practiceNo" class="chip-button" type="button" disabled>No</button>
+              <button id="practiceReset" class="chip-button" type="button">Reset</button>
+            </div>
+            <div class="decision-log" id="decisionLog">No decisions yet.</div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top: 18px;">
+          <div class="eyebrow">Why This Helps</div>
+          <div class="timeline">
+            <article class="timeline-step">
+              <h4>Clear choices</h4>
+              <p>Students answer one small question at a time instead of trying to memorize all groups at once.</p>
+            </article>
+            <article class="timeline-step">
+              <h4>Evidence-based</h4>
+              <p>The key depends on observable traits, which supports accurate scientific thinking.</p>
+            </article>
+            <article class="timeline-step">
+              <h4>Easy to build</h4>
+              <p>Students can make their own keys to practice classification and compare organisms.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-builder">
+        <div class="section-head">
+          <div>
+            <h3>Create Your Own Key</h3>
+            <p>
+              Students can build a simple dichotomous key by writing a question and the result of each yes/no path.
+            </p>
+          </div>
+        </div>
+
+        <div class="grid grid-2">
+          <div class="builder-card">
+            <div class="eyebrow">Key Builder</div>
+            <p>Add steps, then generate a custom practice key. Your work is saved in the browser.</p>
+            <div id="builderRows"></div>
+            <div class="hero-actions" style="margin-top: 10px;">
+              <button id="addBuilderRow" class="button" type="button">Add Step</button>
+              <button id="saveKey" class="chip-button" type="button">Save</button>
+              <button id="clearKey" class="chip-button" type="button">Clear</button>
+            </div>
+          </div>
+
+          <div class="builder-card">
+            <div class="eyebrow">Generated Output</div>
+            <h4>Classroom-ready text</h4>
+            <p>Use this output as a draft for your own dichotomous key.</p>
+            <div class="key-output" id="keyOutput">No key generated yet.</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footnote">
+      Organism Explorer is a single HTML file with all CSS and JavaScript included inside it.
+    </footer>
+  </div>
+
+  <script>
+    const animalData = [
+      {
+        name: "Dog",
+        category: "Mammal",
+        habitat: "Land-based vertebrate",
+        fact: "Dogs have a strong sense of smell and belong to the mammal group because they have hair and feed live young with milk.",
+        tip: "In a dichotomous key, fur or hair is a strong clue that an animal belongs to mammals."
+      },
+      {
+        name: "Human",
+        category: "Mammal",
+        habitat: "Land-based vertebrate",
+        fact: "Humans are mammals because they have hair and give birth to live young.",
+        tip: "When a backbone is present, use body covering and reproduction to narrow the group."
+      },
+      {
+        name: "Eagle",
+        category: "Bird",
+        habitat: "Air-based vertebrate",
+        fact: "Eagles are birds with feathers, wings, and sharp eyesight.",
+        tip: "Feathers are one of the easiest traits to use in a dichotomous key because birds are the only animals with feathers."
+      },
+      {
+        name: "Sparrow",
+        category: "Bird",
+        habitat: "Air-based vertebrate",
+        fact: "Sparrows are small birds that lay eggs and have feathers.",
+        tip: "Ask whether the animal has feathers before asking about habitat because some birds also walk and swim."
+      },
+      {
+        name: "Salmon",
+        category: "Fish",
+        habitat: "Water-based vertebrate",
+        fact: "Salmon live in water and breathe through gills.",
+        tip: "Gills and fins are strong clues that point to fish in a dichotomous key."
+      },
+      {
+        name: "Goldfish",
+        category: "Fish",
+        habitat: "Water-based vertebrate",
+        fact: "Goldfish are fish with scales, fins, and gills.",
+        tip: "If an animal lives in water, check whether it has gills before deciding it is a fish."
+      },
+      {
+        name: "Frog",
+        category: "Amphibian",
+        habitat: "Land and water vertebrate",
+        fact: "Frogs are amphibians with moist skin and a life cycle linked to water.",
+        tip: "Moist skin and life on land and in water often lead to amphibians."
+      },
+      {
+        name: "Snake",
+        category: "Reptile",
+        habitat: "Land-based vertebrate",
+        fact: "Snakes are reptiles with dry scales and they usually lay eggs.",
+        tip: "Dry, scaly skin is a key clue for reptiles, even if the animal has no legs."
+      },
+      {
+        name: "Lizard",
+        category: "Reptile",
+        habitat: "Land-based vertebrate",
+        fact: "Lizards are reptiles with scaly skin and lungs.",
+        tip: "After confirming a backbone, dry scales help separate reptiles from amphibians."
+      },
+      {
+        name: "Butterfly",
+        category: "Arthropod",
+        habitat: "Air-based invertebrate",
+        fact: "Butterflies are insects, so they are arthropods with an exoskeleton and jointed legs.",
+        tip: "Jointed legs and a hard outer body are useful clues for arthropods."
+      },
+      {
+        name: "Spider",
+        category: "Arthropod",
+        habitat: "Land-based invertebrate",
+        fact: "Spiders are arthropods with eight legs and no backbone.",
+        tip: "A missing backbone and jointed legs point strongly to arthropods."
+      },
+      {
+        name: "Crab",
+        category: "Arthropod",
+        habitat: "Water-based invertebrate",
+        fact: "Crabs are arthropods with an exoskeleton and jointed legs.",
+        tip: "An exoskeleton can identify an arthropod even if the animal lives in water."
+      },
+      {
+        name: "Owl",
+        category: "Bird",
+        habitat: "Air-based vertebrate",
+        fact: "Owls are birds with feathers and excellent night vision.",
+        tip: "If you can confirm feathers, the key can stop early because feathers mean bird."
+      },
+      {
+        name: "Dolphin",
+        category: "Mammal",
+        habitat: "Water-based vertebrate",
+        fact: "Dolphins live in water but they are mammals because they breathe with lungs and give birth to live young.",
+        tip: "Do not classify by habitat alone. Water animals can be fish, mammals, or even arthropods."
+      }
+    ];
+
+    const pages = document.querySelectorAll(".page");
+    const navLinks = document.querySelectorAll(".nav-link");
+    const jumpButtons = document.querySelectorAll("[data-jump]");
+    const searchResults = document.getElementById("searchResults");
+    const animalSearch = document.getElementById("animalSearch");
+    const searchReset = document.getElementById("searchReset");
+    const animalImage = document.getElementById("animalImage");
+    const previewBox = document.getElementById("previewBox");
+    const classifyButton = document.getElementById("classifyButton");
+    const resetClassifier = document.getElementById("resetClassifier");
+    const classificationResult = document.getElementById("classificationResult");
+    const builderRows = document.getElementById("builderRows");
+    const addBuilderRow = document.getElementById("addBuilderRow");
+    const saveKey = document.getElementById("saveKey");
+    const clearKey = document.getElementById("clearKey");
+    const keyOutput = document.getElementById("keyOutput");
+    const practiceQuestion = document.getElementById("practiceQuestion");
+    const practiceHint = document.getElementById("practiceHint");
+    const practiceStart = document.getElementById("practiceStart");
+    const practiceYes = document.getElementById("practiceYes");
+    const practiceNo = document.getElementById("practiceNo");
+    const practiceReset = document.getElementById("practiceReset");
+    const decisionLog = document.getElementById("decisionLog");
+
+    const classifierFields = {
+      hasBackbone: document.getElementById("hasBackbone"),
+      bodyCovering: document.getElementById("bodyCovering"),
+      habitat: document.getElementById("habitat"),
+      movement: document.getElementById("movement"),
+      reproduction: document.getElementById("reproduction"),
+      breathing: document.getElementById("breathing")
+    };
+
+    function showPage(pageName) {
+      pages.forEach((page) => {
+        page.classList.toggle("active", page.id === "page-" + pageName);
+      });
+
+      navLinks.forEach((link) => {
+        link.classList.toggle("active", link.dataset.page === pageName);
+      });
+    }
+
+    navLinks.forEach((link) => {
+      link.addEventListener("click", () => showPage(link.dataset.page));
+    });
+
+    jumpButtons.forEach((button) => {
+      button.addEventListener("click", () => showPage(button.dataset.jump));
+    });
+
+    function renderSearchCards(query = "") {
+      const text = query.trim().toLowerCase();
+      searchResults.innerHTML = "";
+
+      const matches = animalData.filter((animal) => {
+        return !text ||
+          animal.name.toLowerCase().includes(text) ||
+          animal.category.toLowerCase().includes(text) ||
+          animal.habitat.toLowerCase().includes(text) ||
+          animal.fact.toLowerCase().includes(text);
+      });
+
+      if (!matches.length) {
+        searchResults.innerHTML = `
+          <article class="search-result visible">
+            <h4>No animals matched that search.</h4>
+            <p>Try words like mammal, reptile, fish, frog, eagle, or crab.</p>
+          </article>
+        `;
+        return;
+      }
+
+      matches.forEach((animal) => {
+        const card = document.createElement("article");
+        card.className = "search-result visible";
+        card.innerHTML = `
+          <h4>${animal.name}</h4>
+          <p>${animal.fact}</p>
+          <small>${animal.category} | ${animal.habitat}</small>
+          <span class="meta-line">Dichotomous key tip: ${animal.tip}</span>
+        `;
+        searchResults.appendChild(card);
+      });
+    }
+
+    animalSearch.addEventListener("input", (event) => {
+      renderSearchCards(event.target.value);
+    });
+
+    searchReset.addEventListener("click", () => {
+      animalSearch.value = "";
+      renderSearchCards("");
+    });
+
+    renderSearchCards("");
+
+    animalImage.addEventListener("change", () => {
+      const file = animalImage.files && animalImage.files[0];
+      if (!file) {
+        previewBox.innerHTML = "<span>No animal image selected yet.</span>";
+        return;
+      }
+
+      const imageUrl = URL.createObjectURL(file);
+      previewBox.innerHTML = `<img src="${imageUrl}" alt="Animal preview">`;
+    });
+
+    function filenameHint() {
+      const file = animalImage.files && animalImage.files[0];
+      if (!file) {
+        return "";
+      }
+
+      const name = file.name.toLowerCase();
+      const match = animalData.find((animal) => name.includes(animal.name.toLowerCase()));
+      return match ? `File name hint: this may be a ${match.name}. ` : "";
+    }
+
+    function classifyAnimal() {
+      const {
+        hasBackbone,
+        bodyCovering,
+        habitat,
+        movement,
+        reproduction,
+        breathing
+      } = Object.fromEntries(
+        Object.entries(classifierFields).map(([key, field]) => [key, field.value])
+      );
+
+      let group = "Unknown";
+      let explanation = "More observations are needed.";
+
+      if (hasBackbone === "no") {
+        if (movement === "jointed" || bodyCovering === "shell") {
+          group = "Invertebrate: Arthropod";
+          explanation = "No backbone plus jointed legs or an exoskeleton points to arthropods such as insects, spiders, or crabs.";
+        } else {
+          group = "Invertebrate";
+          explanation = "The animal appears to have no backbone, so it belongs to the invertebrates.";
+        }
+      } else if (hasBackbone === "yes") {
+        if (bodyCovering === "feathers" || movement === "wings" || habitat === "air") {
+          group = "Vertebrate: Bird";
+          explanation = "Feathers and wings are strong clues for birds.";
+        } else if (bodyCovering === "fur" || reproduction === "live") {
+          group = "Vertebrate: Mammal";
+          explanation = "Fur or hair and live birth strongly suggest a mammal.";
+        } else if (breathing === "gills" || movement === "fins" || habitat === "water") {
+          group = "Vertebrate: Fish";
+          explanation = "Gills, fins, and life in water point to fish.";
+        } else if (bodyCovering === "moist" || habitat === "both" || breathing === "mixed") {
+          group = "Vertebrate: Amphibian";
+          explanation = "Moist skin and life on land and in water are typical amphibian traits.";
+        } else if (bodyCovering === "scales" || movement === "slither" || reproduction === "eggs") {
+          group = "Vertebrate: Reptile";
+          explanation = "Dry scales, slithering movement, or egg laying with a backbone suggest a reptile.";
+        } else {
+          group = "Vertebrate";
+          explanation = "The organism appears to have a backbone, but more details are needed to choose the exact vertebrate group.";
+        }
+      }
+
+      classificationResult.innerHTML = `
+        <strong>${group}</strong>
+        ${filenameHint()}${explanation}
+        <ul>
+          <li>Backbone: ${hasBackbone || "not chosen"}</li>
+          <li>Body covering: ${bodyCovering || "not chosen"}</li>
+          <li>Habitat: ${habitat || "not chosen"}</li>
+          <li>Movement or structure: ${movement || "not chosen"}</li>
+          <li>Reproduction: ${reproduction || "not chosen"}</li>
+          <li>Breathing: ${breathing || "not chosen"}</li>
+        </ul>
+      `;
+    }
+
+    classifyButton.addEventListener("click", classifyAnimal);
+
+    resetClassifier.addEventListener("click", () => {
+      Object.values(classifierFields).forEach((field) => {
+        field.value = "";
+      });
+      animalImage.value = "";
+      previewBox.innerHTML = "<span>No animal image selected yet.</span>";
+      classificationResult.innerHTML = `
+        <strong>Waiting for classification</strong>
+        Add an image and answer the questions above to see the most likely animal group.
+      `;
+    });
+
+    function createBuilderRow(step = { question: "", yes: "", no: "" }) {
+      const row = document.createElement("div");
+      row.className = "builder-row";
+      row.innerHTML = `
+        <input class="field builder-question" type="text" placeholder="Question, for example: Does it have feathers?" value="${step.question}">
+        <input class="field builder-yes" type="text" placeholder="If yes..." value="${step.yes}">
+        <input class="field builder-no" type="text" placeholder="If no..." value="${step.no}">
+        <button class="mini-button" type="button">Remove</button>
+      `;
+
+      row.querySelector(".mini-button").addEventListener("click", () => {
+        row.remove();
+        generateKeyOutput();
+      });
+
+      row.querySelectorAll("input").forEach((input) => {
+        input.addEventListener("input", generateKeyOutput);
+      });
+
+      builderRows.appendChild(row);
+      generateKeyOutput();
+    }
+
+    function getBuilderData() {
+      return Array.from(builderRows.querySelectorAll(".builder-row")).map((row) => ({
+        question: row.querySelector(".builder-question").value.trim(),
+        yes: row.querySelector(".builder-yes").value.trim(),
+        no: row.querySelector(".builder-no").value.trim()
+      }));
+    }
+
+    function generateKeyOutput() {
+      const steps = getBuilderData().filter((step) => step.question || step.yes || step.no);
+
+      if (!steps.length) {
+        keyOutput.textContent = "No key generated yet.";
+        return;
+      }
+
+      const lines = steps.map((step, index) => {
+        const stepNumber = index + 1;
+        const yesText = step.yes || "continue";
+        const noText = step.no || "continue";
+        return `${stepNumber}. ${step.question || "Add a question"}\n   a. Yes -> ${yesText}\n   b. No -> ${noText}`;
+      });
+
+      keyOutput.textContent = lines.join("\n\n");
+    }
+
+    addBuilderRow.addEventListener("click", () => createBuilderRow());
+
+    saveKey.addEventListener("click", () => {
+      const data = getBuilderData();
+      localStorage.setItem("organismExplorerKey", JSON.stringify(data));
+      generateKeyOutput();
+      keyOutput.textContent += "\n\nSaved in this browser.";
+    });
+
+    clearKey.addEventListener("click", () => {
+      builderRows.innerHTML = "";
+      localStorage.removeItem("organismExplorerKey");
+      createBuilderRow();
+      generateKeyOutput();
+    });
+
+    const storedKey = JSON.parse(localStorage.getItem("organismExplorerKey") || "null");
+    if (storedKey && storedKey.length) {
+      storedKey.forEach((step) => createBuilderRow(step));
+      generateKeyOutput();
+    } else {
+      createBuilderRow({
+        question: "Does it have feathers?",
+        yes: "Bird",
+        no: "Go to the next question"
+      });
+      generateKeyOutput();
+    }
+
+    const practiceTree = {
+      start: {
+        question: "Does the animal have a backbone?",
+        yes: "vertebrateCovering",
+        no: "arthropodCheck"
+      },
+      arthropodCheck: {
+        question: "Does it have jointed legs or an exoskeleton?",
+        yes: "resultArthropod",
+        no: "resultInvertebrate"
+      },
+      vertebrateCovering: {
+        question: "Does it have feathers?",
+        yes: "resultBird",
+        no: "furCheck"
+      },
+      furCheck: {
+        question: "Does it have fur or hair?",
+        yes: "resultMammal",
+        no: "gillCheck"
+      },
+      gillCheck: {
+        question: "Does it have gills or fins?",
+        yes: "resultFish",
+        no: "moistCheck"
+      },
+      moistCheck: {
+        question: "Does it have moist skin and live on land and in water?",
+        yes: "resultAmphibian",
+        no: "resultReptile"
+      },
+      resultBird: {
+        result: "Result: Bird. Example: eagle or sparrow."
+      },
+      resultMammal: {
+        result: "Result: Mammal. Example: dog or human."
+      },
+      resultFish: {
+        result: "Result: Fish. Example: salmon or goldfish."
+      },
+      resultAmphibian: {
+        result: "Result: Amphibian. Example: frog."
+      },
+      resultReptile: {
+        result: "Result: Reptile. Example: snake or lizard."
+      },
+      resultArthropod: {
+        result: "Result: Arthropod. Example: spider, butterfly, or crab."
+      },
+      resultInvertebrate: {
+        result: "Result: Invertebrate. More clues are needed for a smaller group."
+      }
+    };
+
+    let currentPracticeNode = null;
+    let decisionHistory = [];
+
+    function updatePracticeView() {
+      if (!currentPracticeNode) {
+        practiceQuestion.textContent = "Press start to begin the sample key.";
+        practiceHint.textContent = "This example key separates vertebrates and invertebrates, then narrows the group.";
+        decisionLog.textContent = "No decisions yet.";
+        practiceYes.disabled = true;
+        practiceNo.disabled = true;
+        return;
+      }
+
+      const node = practiceTree[currentPracticeNode];
+
+      if (node.result) {
+        practiceQuestion.textContent = node.result;
+        practiceHint.textContent = "Reset or start again to try another path.";
+        practiceYes.disabled = true;
+        practiceNo.disabled = true;
+      } else {
+        practiceQuestion.textContent = node.question;
+        practiceHint.textContent = "Choose yes or no to follow the next branch.";
+        practiceYes.disabled = false;
+        practiceNo.disabled = false;
+      }
+
+      decisionLog.textContent = decisionHistory.length
+        ? decisionHistory.join(" -> ")
+        : "No decisions yet.";
+    }
+
+    function movePractice(answer) {
+      if (!currentPracticeNode) {
+        return;
+      }
+
+      const node = practiceTree[currentPracticeNode];
+      if (!node.question) {
+        return;
+      }
+
+      decisionHistory.push(answer === "yes" ? `Yes: ${node.question}` : `No: ${node.question}`);
+      currentPracticeNode = node[answer];
+      updatePracticeView();
+    }
+
+    practiceStart.addEventListener("click", () => {
+      currentPracticeNode = "start";
+      decisionHistory = [];
+      updatePracticeView();
+    });
+
+    practiceYes.addEventListener("click", () => movePractice("yes"));
+    practiceNo.addEventListener("click", () => movePractice("no"));
+
+    practiceReset.addEventListener("click", () => {
+      currentPracticeNode = null;
+      decisionHistory = [];
+      updatePracticeView();
+    });
+
+    updatePracticeView();
+  </script>
+</body>
+
+</html>
